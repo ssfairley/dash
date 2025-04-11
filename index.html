@@ -2,105 +2,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>iPad Mini Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link 
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
-    rel="stylesheet">
-  <style>
-    body {
-      background: #111;
-      color: #eee;
-      font-family: 'Segoe UI', sans-serif;
-      padding: 1rem;
-    }
-    h2 {
-      margin-top: 1rem;
-      font-size: 1.5rem;
-    }
-    .card {
-      background-color: #222;
-      margin-bottom: 1rem;
-    }
-    .weather-block, .news-block {
-      margin-bottom: 2rem;
-    }
-    .headline {
-      font-size: 1rem;
-      margin: 0.25rem 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #ffd700;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .item {
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
-  <div class="container-fluid">
     <h1>Dashboard</h1>
-
-    <div class="weather-block">
-      <h2>Weather - Bloomington, IL (61704)</h2>
-      <div id="weather" class="card p-3"></div>
+    <div class="section" id="weather">
+        <h2>Weather in 61704</h2>
+        <div id="weatherContent">Loading...</div>
+    </div>
+    <div class="section" id="news">
+        <h2>US News</h2>
+        <div id="newsContent">Loading...</div>
+    </div>
+    <div class="section" id="sports">
+        <h2>Sports News (NHL, NFL, MLB)</h2>
+        <div id="sportsContent">Loading...</div>
     </div>
 
-    <div class="news-block">
-      <h2>US News</h2>
-      <div id="us-news" class="card p-3"></div>
+    <script>
+        const apiKey = "37d6d03aae40413cbe2e1ffcedac5707";
 
-      <h2>NHL News</h2>
-      <div id="nhl-news" class="card p-3"></div>
+        // Fetch Weather
+        fetch(`https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=61704`)
+            .then(response => response.json())
+            .then(data => {
+                const weather = data.current;
+                document.getElementById('weatherContent').innerHTML = `
+                    <div class="item">Temperature: ${weather.temp_f}°F</div>
+                    <div class="item">Condition: ${weather.condition.text}</div>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('weatherContent').textContent = "Failed to load weather data.";
+            });
 
-      <h2>NFL News</h2>
-      <div id="nfl-news" class="card p-3"></div>
+        // Fetch News (US)
+        fetch(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiKey}`)
+            .then(response => response.json())
+            .then(data => {
+                const filtered = data.articles.filter(a => !a.title.toLowerCase().includes("trump"));
+                document.getElementById('newsContent').innerHTML =
+                    filtered.slice(0, 5).map(article => `<div class="item">${article.title}</div>`).join('');
+            })
+            .catch(error => {
+                document.getElementById('newsContent').textContent = "Failed to load news data.";
+            });
 
-      <h2>MLB News</h2>
-      <div id="mlb-news" class="card p-3"></div>
-    </div>
-  </div>
-
-  <script 
-    src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script>
-    const NEWS_API_KEY = '37d6d03aae40413cbe2e1ffcedac5707';
-
-    function fetchWeather() {
-      const url = 'https://api.open-meteo.com/v1/forecast?latitude=40.48&longitude=-88.99&current_weather=true';
-      $.getJSON(url, function(data) {
-        const w = data.current_weather;
-        $('#weather').html(`
-          <div>Temp: ${w.temperature}°C</div>
-          <div>Winds: ${w.windspeed} km/h</div>
-          <div>Condition: ${w.weathercode}</div>
-        `);
-      });
-    }
-
-    function fetchNews(category, domId) {
-      const url = `https://newsapi.org/v2/top-headlines?q=${category}&country=us&pageSize=10&apiKey=${NEWS_API_KEY}`;
-      $.getJSON(url, function(data) {
-        const filtered = data.articles.filter(a => !/trump/i.test(a.title));
-        const html = filtered.map(a => `
-          <div class="headline">
-            <a href="${a.url}" target="_blank" style="color: lightblue;">${a.title}</a>
-          </div>`).join('');
-        $(`#${domId}`).html(html || "<div>No filtered news found.</div>");
-      });
-    }
-
-    $(document).ready(function() {
-      fetchWeather();
-      fetchNews('us', 'us-news');
-      fetchNews('nhl', 'nhl-news');
-      fetchNews('nfl', 'nfl-news');
-      fetchNews('mlb', 'mlb-news');
-
-      // Refresh every 10 minutes
-      setInterval(() => {
-        fetchWeather();
-        fetchNews('us', 'us-news');
-        fetchNews('nhl', 'nhl-news');
-        fetchNews('nfl', 'nfl-news');
-        fetchNews('mlb', 'mlb-news');
-      }, 10 * 60 * 1000);
-    });
-  </script>
+        // Fetch Sports (NHL, NFL, MLB)
+        fetch(`https://newsapi.org/v2/top-headlines?category=sports&country=us&apiKey=${apiKey}`)
+            .then(response => response.json())
+            .then(data => {
+                const filtered = data.articles.filter(a => !a.title.toLowerCase().includes("trump"));
+                document.getElementById('sportsContent').innerHTML =
+                    filtered.slice(0, 5).map(article => `<div class="item">${article.title}</div>`).join('');
+            })
+            .catch(error => {
+                document.getElementById('sportsContent').textContent = "Failed to load sports news.";
+            });
+    </script>
 </body>
 </html>
